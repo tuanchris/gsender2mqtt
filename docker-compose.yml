@@ -10,6 +10,6 @@ services:
       - MQTTUSERNAME=${MQTTUSERNAME:-}
       - MQTTPASSWORD=${MQTTPASSWORD:-}
       - MQTTTOPIC=${MQTTTOPIC:-gsender}
-      - MQTT_EMIT_TOPIC=${MQTT_EMIT_TOPIC:-gsender/emit}
+      - MQTTEMITTOPIC=${MQTTEMITTOPIC:-gsender/emit}
       - MQTTCLIENTID=${MQTTCLIENTID:-gsender2mqtt}
       - RETRYDELAY=${RETRYDELAY:-60000}
