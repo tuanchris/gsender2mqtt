@@ -83,7 +83,7 @@ public class SocketIOService : BackgroundService, IAsyncDisposable
                             _logger.LogWarning("Cannot send command, no active port");
                             return;
                         }
-                        _logger.LogInformation($"Sending command: {subcommand} with payload: {payload}");
+                        _logger.LogInformation($"Sending command: {subcommand} on port: {_activePort} with payload: {payload}");
                         if (!string.IsNullOrWhiteSpace(payload))
                         {
                             await _client.EmitAsync("command", _activePort, subcommand, payload);
@@ -181,6 +181,7 @@ public class SocketIOService : BackgroundService, IAsyncDisposable
 
         _client.On("serialport:open", async (data) =>
         {
+            _logger.LogInformation($"Serial port opened, active port: {_activePort}");
             await PublishAsync(STATUS, "connected");
         });
 
