@@ -1,6 +1,7 @@
 services:
   gsender2mqtt:
     build: .
+    restart: unless-stopped
     environment:
       - SERVERURL=http://localhost:8000
       - GRBLHALIPADDRESS=192.168.1.100

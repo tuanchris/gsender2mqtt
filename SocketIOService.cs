@@ -165,15 +165,22 @@ public class SocketIOService : BackgroundService, IAsyncDisposable
 
         while (!stoppingToken.IsCancellationRequested)
         {
-            if (!_mqttClient.IsConnected)
+            try
             {
-                await _mqttClient.ConnectAsync(mqttClientOptions, stoppingToken);
-                await _mqttClient.SubscribeAsync(new MqttClientSubscribeOptionsBuilder()
-                    .WithTopicFilter($"{_config.MqttTopic}/{EMIT}/#")
-                    .Build(), stoppingToken);
+                if (!_mqttClient.IsConnected)
+                {
+                    await _mqttClient.ConnectAsync(mqttClientOptions, stoppingToken);
+                    await _mqttClient.SubscribeAsync(new MqttClientSubscribeOptionsBuilder()
+                        .WithTopicFilter($"{_config.MqttTopic}/{EMIT}/#")
+                        .Build(), stoppingToken);
+                }
+                if (_mqttClient.IsConnected && !_client.Connected)
+                    await _client.ConnectAsync();
             }
-            if (_mqttClient.IsConnected && !_client.Connected)
-                await _client.ConnectAsync();
+            catch (Exception ex)
+            {
+                _logger.LogWarning($"Connection attempt failed, retrying in {_config.RetryDelay}ms: {ex.Message}");
+            }
             await Task.Delay(_config.RetryDelay);
         }
 
