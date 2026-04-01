@@ -181,7 +181,9 @@ public class SocketIOService : BackgroundService, IAsyncDisposable
             }
             else if (_config.GrblHalIpAddress != null)
             {
-                _activePort = _config.GrblHalIpAddress;
+                // gSender uses just the IP (without port) as the controller identifier
+                var parts = _config.GrblHalIpAddress.Split(':');
+                _activePort = parts[0];
                 await _client.EmitAsync("open", _config.GrblHalIpAddress);
             }
             else
