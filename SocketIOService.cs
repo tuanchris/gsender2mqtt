@@ -171,6 +171,7 @@ public class SocketIOService : BackgroundService, IAsyncDisposable
 
         _client.On("serialport:list", async (data) =>
         {
+            _logger.LogInformation($"serialport:list raw data: {data}");
             var serialPorts = JsonSerializer.Deserialize<List<List<SerialPort>>>(data.ToString(), _jsonSerializerOptions);
             var serialPort = serialPorts.SelectMany(p => p).FirstOrDefault(p => p.InUse);
             if (serialPort != null)
