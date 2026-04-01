@@ -3,13 +3,13 @@ services:
     build: .
     restart: unless-stopped
     environment:
-      - SERVERURL=http://localhost:8000
-      - GRBLHALIPADDRESS=192.168.1.100
-      - MQTTSERVER=localhost
-      - MQTTPORT=1883
-      - MQTTUSERNAME=
-      - MQTTPASSWORD=
-      - MQTTTOPIC=gsender
-      - MQTT_EMIT_TOPIC=gsender/emit
-      - MQTTCLIENTID=gsender2mqtt
-      - RETRYDELAY=60000
+      - SERVERURL=${SERVERURL:-http://localhost:8000}
+      - GRBLHALIPADDRESS=${GRBLHALIPADDRESS:-}
+      - MQTTSERVER=${MQTTSERVER:-localhost}
+      - MQTTPORT=${MQTTPORT:-1883}
+      - MQTTUSERNAME=${MQTTUSERNAME:-}
+      - MQTTPASSWORD=${MQTTPASSWORD:-}
+      - MQTTTOPIC=${MQTTTOPIC:-gsender}
+      - MQTT_EMIT_TOPIC=${MQTT_EMIT_TOPIC:-gsender/emit}
+      - MQTTCLIENTID=${MQTTCLIENTID:-gsender2mqtt}
+      - RETRYDELAY=${RETRYDELAY:-60000}
