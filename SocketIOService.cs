@@ -93,6 +93,18 @@ public class SocketIOService : BackgroundService, IAsyncDisposable
                             await _client.EmitAsync("command", new object[] { _activePort, subcommand });
                         }
                     }
+                    // Handle writeln: writes raw G-code directly to the serial port
+                    // Topic: gsender/emit/writeln, Payload: the G-code line
+                    else if (topicSuffix == "writeln")
+                    {
+                        if (string.IsNullOrWhiteSpace(_activePort))
+                        {
+                            _logger.LogWarning("Cannot writeln, no active port");
+                            return;
+                        }
+                        _logger.LogInformation($"Writing to port {_activePort}: {payload}");
+                        await _client.EmitAsync("writeln", new object[] { _activePort, payload });
+                    }
                     else
                     {
                         // Generic emit for non-command events
