@@ -86,11 +86,11 @@ public class SocketIOService : BackgroundService, IAsyncDisposable
                         _logger.LogInformation($"Sending command: {subcommand} on port: {_activePort} with payload: {payload}");
                         if (!string.IsNullOrWhiteSpace(payload))
                         {
-                            await _client.EmitAsync("command", _activePort, subcommand, payload);
+                            await _client.EmitAsync("command", new object[] { _activePort, subcommand, payload });
                         }
                         else
                         {
-                            await _client.EmitAsync("command", _activePort, subcommand);
+                            await _client.EmitAsync("command", new object[] { _activePort, subcommand });
                         }
                     }
                     else
