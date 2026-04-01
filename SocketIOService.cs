@@ -16,6 +16,7 @@ public class SocketIOService : BackgroundService, IAsyncDisposable
     private IMqttClient _mqttClient;
     private JsonSerializerOptions _jsonSerializerOptions;
     private Config _config;
+    private string _activePort;
 
     private const string STATUS = "status";
     private const string STARTUP = "startup";
@@ -64,28 +65,51 @@ public class SocketIOService : BackgroundService, IAsyncDisposable
             _mqttClient.ApplicationMessageReceivedAsync += async (e) =>
             {
                 _logger.LogInformation($"MQTT received: {e.ApplicationMessage.Topic}");
-                if (_client?.Connected ?? false && e.ApplicationMessage.Topic.StartsWith($"{_config.MqttEmitTopic}"))
+                if (!(_client?.Connected ?? false) || !e.ApplicationMessage.Topic.StartsWith($"{_config.MqttEmitTopic}"))
+                    return;
+
+                try
                 {
-                    try
+                    var topicSuffix = e.ApplicationMessage.Topic.Replace($"{_config.MqttEmitTopic}/", "");
+                    var payload = e.ApplicationMessage.ConvertPayloadToString();
+
+                    // Handle command topics: gsender/emit/command/{subcommand}
+                    // gSender expects: emit('command', port, subcommand, ...args)
+                    if (topicSuffix.StartsWith("command/"))
                     {
-                        var eventName = e.ApplicationMessage.Topic.Replace($"{_config.MqttEmitTopic}/", "");
-                        var payload = e.ApplicationMessage.ConvertPayloadToString();
-                        var payloadObject = JsonSerializer.Deserialize<object>(payload, _jsonSerializerOptions);
-                        _logger.LogInformation($"Emitting event: {eventName} with payload: {payload}");
+                        var subcommand = topicSuffix.Replace("command/", "");
+                        if (string.IsNullOrWhiteSpace(_activePort))
+                        {
+                            _logger.LogWarning("Cannot send command, no active port");
+                            return;
+                        }
+                        _logger.LogInformation($"Sending command: {subcommand} with payload: {payload}");
                         if (!string.IsNullOrWhiteSpace(payload))
                         {
-                            // this is not working, at least with what I have tried so far.
-                            await _client.EmitAsync(eventName, payloadObject);
+                            await _client.EmitAsync("command", _activePort, subcommand, payload);
                         }
                         else
                         {
-                            await _client.EmitAsync(eventName);
+                            await _client.EmitAsync("command", _activePort, subcommand);
                         }
                     }
-                    catch (ObjectDisposedException)
+                    else
                     {
-                        _logger.LogWarning("SocketIO client was disposed while trying to emit message");
+                        // Generic emit for non-command events
+                        _logger.LogInformation($"Emitting event: {topicSuffix} with payload: {payload}");
+                        if (!string.IsNullOrWhiteSpace(payload))
+                        {
+                            await _client.EmitAsync(topicSuffix, payload);
+                        }
+                        else
+                        {
+                            await _client.EmitAsync(topicSuffix);
+                        }
                     }
+                }
+                catch (ObjectDisposedException)
+                {
+                    _logger.LogWarning("SocketIO client was disposed while trying to emit message");
                 }
             };
         }
@@ -139,10 +163,12 @@ public class SocketIOService : BackgroundService, IAsyncDisposable
             var serialPort = serialPorts.SelectMany(p => p).FirstOrDefault(p => p.InUse);
             if (serialPort != null)
             {
+                _activePort = serialPort.Port;
                 await _client.EmitAsync("open", serialPort.Port);
             }
             else if (_config.GrblHalIpAddress != null)
             {
+                _activePort = _config.GrblHalIpAddress;
                 await _client.EmitAsync("open", _config.GrblHalIpAddress);
             }
             else
